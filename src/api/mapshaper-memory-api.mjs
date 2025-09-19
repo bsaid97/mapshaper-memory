@@ -300,7 +300,14 @@ export function clean(geojson, options = {}) {
 
   options = normalizeOptions(options);
 
-  return runCommandOnGeojson(geojson, cmd.clean, options);
+  // Convert input to dataset
+  const dataset = geojsonToDataset(geojson, options);
+
+  // cleanLayers expects (layers, dataset, opts) signature
+  cmd.cleanLayers(dataset.layers, dataset, options);
+
+  // cleanLayers modifies the dataset in place, so return the modified dataset
+  return datasetToGeojson(dataset, options);
 }
 
 // Union features in a GeoJSON object
