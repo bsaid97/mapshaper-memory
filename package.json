@@ -1,6 +1,6 @@
 {
   "name": "mapshaper-memory",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Memory API for mapshaper - process GeoJSON directly in memory with 38+ geospatial operations including dissolve, buffer, clip, simplify, explode, mosaic and more",
   "keywords": [
     "geojson",

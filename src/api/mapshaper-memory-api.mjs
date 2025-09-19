@@ -677,7 +677,14 @@ export function filterSlivers(geojson, options = {}) {
     stop('Invalid GeoJSON input');
   }
 
-  return runCommandOnGeojson(geojson, cmd.filterSlivers, options);
+  // Convert input to dataset
+  const dataset = geojsonToDataset(geojson, options);
+
+  // filterSlivers expects (layer, dataset, opts) signature
+  const result = cmd.filterSlivers(dataset.layers[0], dataset, options);
+
+  // filterSlivers modifies the layer in place and returns count, so return the modified dataset
+  return datasetToGeojson(dataset, options);
 }
 
 // Snap coordinates to a grid for precision control
@@ -688,7 +695,18 @@ export function snap(geojson, options = {}) {
     stop('Invalid GeoJSON input');
   }
 
-  return runCommandOnGeojson(geojson, cmd.snap, options);
+  // Convert input to dataset
+  const dataset = geojsonToDataset(geojson, options);
+
+  // snap expects (target, opts) where target has dataset property
+  const target = {
+    dataset: dataset
+  };
+
+  cmd.snap(target, options);
+
+  // snap modifies the dataset in place, so return the modified dataset
+  return datasetToGeojson(dataset, options);
 }
 
 // Export all memory API functions
