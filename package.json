@@ -1,26 +1,32 @@
 {
   "name": "mapshaper-memory",
-  "version": "0.1.0",
-  "description": "A fork of mapshaper with memory API for processing GeoJSON directly in memory without file I/O",
+  "version": "1.0.0",
+  "description": "Memory API for mapshaper - process GeoJSON directly in memory with dissolve, buffer, clip, simplify and more geospatial operations",
   "keywords": [
-    "shapefile",
-    "topojson",
     "geojson",
+    "gis",
+    "topojson",
     "cartography",
     "simplification",
     "topology",
-    "csv",
-    "gis",
     "dissolve",
+    "buffer",
+    "clip",
     "memory",
-    "in-memory"
+    "geospatial",
+    "mapshaper"
   ],
-  "author": "Based on mapshaper by Matthew Bloch",
-  "contributors": [],
+  "author": "Ben Said",
+  "contributors": [
+    {
+      "name": "Matthew Bloch",
+      "note": "Original mapshaper author - this is a derivative work under MPL-2.0"
+    }
+  ],
   "license": "MPL-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yourusername/mapshaper-memory.git"
+    "url": "git+https://github.com/bsaid97/mapshaper-memory.git"
   },
   "engines": {
     "node": ">=12.0.0"
@@ -28,17 +34,27 @@
   "scripts": {
     "test": "mocha test",
     "build": "rollup --config",
+    "build:library": "npm run build",
     "lint": "eslint --ext mjs src/",
-    "prepublishOnly": "npm lint; npm test; ./pre-publish",
-    "postpublish": "./release_web_ui; ./release_github_version",
+    "prepublishOnly": "npm run lint && npm run build:library",
     "dev": "rollup --config --watch"
   },
-  "main": "./mapshaper.js",
+  "main": "./index.js",
+  "module": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js",
+      "require": "./index.js"
+    }
+  },
   "files": [
-    "/bin/**",
-    "/www/**",
-    "!/www/nacis/**",
+    "/index.js",
+    "/index.d.ts",
     "/mapshaper.js",
+    "/LICENSE",
+    "/README.md",
     "!.DS_Store"
   ],
   "dependencies": {
@@ -87,15 +103,10 @@
     "parallel": true,
     "jobs": 4
   },
-  "bin": {
-    "mapshaper": "bin/mapshaper",
-    "mapshaper-gui": "bin/mapshaper-gui",
-    "mapshaper-xl": "bin/mapshaper-xl"
-  },
   "bugs": {
-    "url": "https://github.com/mbloch/mapshaper/issues"
+    "url": "https://github.com/bsaid97/mapshaper-memory/issues"
   },
-  "homepage": "https://github.com/mbloch/mapshaper#readme",
+  "homepage": "https://github.com/bsaid97/mapshaper-memory#readme",
   "directories": {
     "test": "test"
   },

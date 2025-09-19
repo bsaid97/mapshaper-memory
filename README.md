@@ -1,111 +1,247 @@
-# mapshaper-memory
+# MapShaper Memory API
 
-## Introduction
+A memory-focused JavaScript library for processing GeoJSON data with advanced geospatial operations. Based on [mapshaper](https://github.com/mbloch/mapshaper) by Matthew Bloch, this library provides a clean, functional API for working with geographic data directly in memory.
 
-mapshaper-memory is a fork of [Mapshaper](https://github.com/mbloch/mapshaper) that adds a Memory API for processing GeoJSON data directly in memory without file I/O.
+## Features
 
-This fork extends Mapshaper (software for editing Shapefile, GeoJSON, [TopoJSON](https://github.com/mbostock/topojson/wiki), CSV and several other data formats) with simple functions that work directly with JavaScript objects.
-
-Mapshaper supports essential map making tasks like simplifying shapes, editing attribute data, clipping, erasing, dissolving, filtering and more.
-
-See the [project wiki](https://github.com/mbloch/mapshaper/wiki) for documentation on how to use mapshaper.
-
-To suggest improvements, add an [issue](https://github.com/mbloch/mapshaper/issues).
-
-
-## Command line tools
-
-Mapshaper includes several command line programs, which can be run under Mac OS X, Linux and Windows.
-
-* `mapshaper` Runs mapshaper commands.
-* `mapshaper-xl` Works the same as `mapshaper`, but runs with more RAM to support larger files.
-* `mapshaper-gui` Runs the mapshaper Web interface locally.
-
-The project wiki has an [introduction](https://github.com/mbloch/mapshaper/wiki/Introduction-to-the-Command-Line-Tool) to using the command line tool that includes many simple examples.
-
-For a detailed reference, see the [Command Reference](https://github.com/mbloch/mapshaper/wiki/Command-Reference).
-
-
-## Interactive web interface
-
-Visit the public website at [www.mapshaper.org](http://www.mapshaper.org) or use the web UI locally via the `mapshaper-gui` script. 
-
-All processing is done in the browser, so your data stays private, even when using the public website.
-
-The web UI works in recent desktop versions of Chrome, Firefox, Safari and Internet Explorer. Safari before v10.1 and IE before v10 are not supported.
-
-## User-contributed resources
-
-[rmapshaper](https://github.com/ateucher/rmapshaper) is an R package written by Andy Teucher that gives R users access to many of mapshaper's editing commands.
-
-[Here](https://hub.docker.com/r/freifunkhamm/mapshaper) are resources for using mapshaper with Docker, provided by Christian Weiss.
-
-You can find a number of mapshaper tutorials online, including a [two](https://moriartynaps.org/command-carto-part-one/) [part](https://moriartynaps.org/command-line-carto-two/) guide to command line cartography by Dylan Moriarty and [this introduction](https://handsondataviz.org/mapshaper.html) by Jack Dougherty.
-
-
-## Large file support
-
-**Web interface**
-
-Firefox is able to load Shapefiles and GeoJSON files larger than 1GB. Chrome has improved in recent versions, but is still prone to out-of-memory errors when importing files larger than several hundred megabytes.
-
-**Command line interface**
-
-There are hard limits for reading and writing most file types. The maximum output size of a single file of any type is 2GB. Some file types (GeoJSON, CSV, .shp, .dbf) are read incrementally, so much larger files can be imported.
-
-When working with very large files, mapshaper may become unresponsive or crash with the message "JavaScript heap out of memory."
-
-You can use `mapshaper-xl` as a replacement for the standard `mapshaper` program to allocate more heap memory (8GB by default). You can allocate even more memory like this: `mapshaper-xl 20gb [commands]`.
-
-Another option is to run Node directly with the `--max-old-space-size` option. The following example (Mac or Linux) allocates 16GB of heap memory:
-```bash
-$ node  --max-old-space-size=16000 `which mapshaper` <mapshaper commands>
-```
+🗺️ **13 Geospatial Operations** - dissolve, buffer, clip, simplify, and more
+⚡ **Memory-Optimized** - Process GeoJSON without file I/O
+🔧 **TypeScript Support** - Full type definitions included
+🌐 **Universal** - Works in Node.js and browsers
+📦 **Zero Config** - Simple install and use
 
 ## Installation
 
-Mapshaper requires [Node.js](http://nodejs.org).
-
-With Node installed, you can install the latest release version of mapshaper using npm. Install with the "-g" flag to make the executable scripts available systemwide.
-
 ```bash
-npm install -g mapshaper
+npm install mapshaper-memory
 ```
 
-To install and run the latest development code from github:
+## Quick Start
 
-```bash
-git clone git@github.com:mbloch/mapshaper.git
-cd mapshaper
-npm install       # install dependencies
-npm run build     # bundle source code files
-npm link          # (optional) add global symlinks so scripts are available systemwide
+```javascript
+import { dissolve, buffer, clip } from 'mapshaper-memory';
+// or
+const mapshaper = require('mapshaper-memory');
+
+// Dissolve features by shared properties
+const dissolved = dissolve(geojson, { fields: 'region' });
+
+// Create 100-meter buffers
+const buffered = buffer(geojson, 100, { units: 'meters' });
+
+// Clip features to a boundary
+const clipped = clip(targetLayer, boundaryLayer);
 ```
 
-## Using mapshaper with Bun
+## API Reference
 
-Mapshaper's command line tools can be run with [Bun](https://bun.sh/) as an alternative to Node.js. The simplest option is to use `bunx`, like this:
+### Core Operations
 
+#### `dissolve(geojson, options?)`
+Dissolve features based on shared attribute values.
+```javascript
+const result = dissolve(geojson, {
+  fields: 'region',           // Field(s) to dissolve by
+  'sum-fields': 'population', // Fields to sum during dissolve
+  'copy-fields': 'name'       // Fields to copy from first feature
+});
 ```
-bunx mapshaper [commands]
+
+#### `dissolve2(geojson, options?)`
+Advanced dissolve with topological analysis (removes overlaps and gaps).
+```javascript
+const result = dissolve2(geojson, {
+  fields: 'category',
+  'gap-fill-area': '1km2',
+  'sliver-control': 0.5
+});
 ```
 
-## Building and testing
+#### `buffer(geojson, distance, options?)`
+Create buffer zones around features.
+```javascript
+const result = buffer(geojson, 500, {
+  units: 'meters'
+});
+```
 
-From the project directory, run `npm run build` to build both the cli and web UI modules.
+#### `clip(targetGeojson, clipGeojson, options?)`
+Clip features using another geometry as boundary.
+```javascript
+const result = clip(counties, stateBoundary);
+```
 
-Run `npm test` to run mapshaper's tests.
+#### `simplify(geojson, options?)`
+Simplify feature geometries to reduce complexity.
+```javascript
+const result = simplify(geojson, {
+  percentage: 0.1,  // Keep 10% of vertices
+  method: 'dp'      // Douglas-Peucker algorithm
+});
+```
 
-## License
+### Data Operations
 
-This software is licensed under [MPL 2.0](http://www.mozilla.org/MPL/2.0/).
+#### `filter(geojson, options)`
+Filter features based on JavaScript expressions.
+```javascript
+const result = filter(geojson, {
+  expression: 'population > 50000 && area < 1000'
+});
+```
 
-According to Mozilla's [FAQ](http://www.mozilla.org/MPL/2.0/FAQ.html), "The MPL's ‘file-level’ copyleft is designed to encourage contributors to share modifications they make to your code, while still allowing them to combine your code with code under other licenses (open or proprietary) with minimal restrictions."
+#### `calc(geojson, expressions, options?)`
+Calculate and add new fields to features.
+```javascript
+const result = calc(geojson, {
+  density: 'population / area',
+  category: 'population > 100000 ? "urban" : "rural"'
+});
+```
 
+#### `join(targetGeojson, sourceGeojson, options)`
+Join attributes from source to target features.
+```javascript
+const result = join(counties, demographics, {
+  keys: 'county_id,id',
+  fields: 'population,income'
+});
+```
 
+### Geometry Operations
+
+#### `clean(geojson, options?)`
+Clean topology - remove slivers, fix overlaps, and repair geometry.
+```javascript
+const result = clean(geojson);
+```
+
+#### `snap(geojson, options?)`
+Snap coordinates to a grid for precision control.
+```javascript
+const result = snap(geojson, {
+  precision: 0.001  // Snap to ~100m grid
+});
+```
+
+#### `filterSlivers(geojson, options?)`
+Remove small polygons (slivers) from the data.
+```javascript
+const result = filterSlivers(geojson, {
+  'min-area': '10km2',
+  'remove-empty': true
+});
+```
+
+#### `union(geojson, options?)`
+Union all features into a single geometry.
+```javascript
+const result = union(geojson);
+```
+
+#### `merge(geojsonArray, options?)`
+Merge multiple GeoJSON objects into one.
+```javascript
+const result = merge([layer1, layer2, layer3]);
+```
+
+## Advanced Usage
+
+### Chaining Operations
+```javascript
+import { dissolve, buffer, simplify } from 'mapshaper-memory';
+
+const result = simplify(
+  buffer(
+    dissolve(geojson, { fields: 'region' }),
+    1000
+  ),
+  { percentage: 0.05 }
+);
+```
+
+### TypeScript Usage
+```typescript
+import { GeoJsonFeatureCollection, DissolveOptions } from 'mapshaper-memory';
+
+const options: DissolveOptions = {
+  fields: 'region',
+  'sum-fields': ['population', 'area']
+};
+
+const result: GeoJsonFeatureCollection = dissolve(geojson, options);
+```
+
+### Expression Syntax
+Many functions support JavaScript expressions for dynamic operations:
+
+```javascript
+// Filter with complex conditions
+filter(geojson, {
+  expression: 'population > 50000 && state === "CA"'
+});
+
+// Calculate new fields
+calc(geojson, {
+  pop_density: 'population / (area_km2 || 1)',
+  size_class: `
+    area_km2 > 1000 ? 'large' :
+    area_km2 > 100 ? 'medium' : 'small'
+  `
+});
+```
+
+## Error Handling
+
+All functions validate input and throw descriptive errors:
+
+```javascript
+try {
+  const result = dissolve(geojson, { fields: 'nonexistent_field' });
+} catch (error) {
+  console.error('Dissolve failed:', error.message);
+}
+```
+
+## Performance Tips
+
+- Use `dissolve2` for overlapping polygons, `dissolve` for simple grouping
+- Apply `simplify` before expensive operations to improve performance
+- Use `clean` to fix topology issues before geometric operations
+- Filter large datasets early in processing chains
+
+## Browser Usage
+
+```html
+<script src="https://unpkg.com/mapshaper-memory"></script>
+<script>
+  const { dissolve, buffer } = mapshaper;
+
+  // Use the API
+  const result = dissolve(geojson, { fields: 'category' });
+</script>
+```
+
+## License & Attribution
+
+This library is based on [mapshaper](https://github.com/mbloch/mapshaper) by Matthew Bloch and is distributed under the Mozilla Public License 2.0. This is a derivative work that provides a memory-focused API for the original mapshaper functionality.
+
+**Original Copyright:** Matthew Bloch
+**Derivative Work:** Ben Said
+**License:** MPL-2.0
+
+According to Mozilla's [FAQ](http://www.mozilla.org/MPL/2.0/FAQ.html), "The MPL's 'file-level' copyleft is designed to encourage contributors to share modifications they make to your code, while still allowing them to combine your code with code under other licenses (open or proprietary) with minimal restrictions."
+
+## Contributing
+
+Issues and pull requests welcome at [github.com/bsaid97/mapshaper-memory](https://github.com/bsaid97/mapshaper-memory).
+
+## Related Projects
+
+- [mapshaper](https://github.com/mbloch/mapshaper) - Original CLI tool and web interface
+- [turf](https://github.com/Turfjs/turf) - Alternative geospatial analysis library
+- [JSTS](https://github.com/bjornharrtell/jsts) - JavaScript topology suite
 
 ## Acknowledgements
 
-My colleagues at The New York Times, for countless suggestions, bug reports and general helpfulness.
-
-Mark Harrower, for collaborating on the original "MapShaper" program at the University of Wisconsin&ndash;Madison.
+Matthew Bloch and contributors to the original mapshaper project, for creating an exceptional geospatial processing library.
