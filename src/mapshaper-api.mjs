@@ -1,5 +1,6 @@
 import { enableLogging } from './utils/mapshaper-logging';
 import { runCommands, applyCommands, runCommandsXL } from './cli/mapshaper-run-commands';
+import memoryApi from './api/mapshaper-memory-api';
 
 import cmd from './mapshaper-cmd';
 import internal from './mapshaper-internal';
@@ -14,6 +15,9 @@ var api = {
   runCommandsXL,
   enableLogging
 };
+
+// Add memory API functions for direct GeoJSON manipulation
+Object.assign(api, memoryApi);
 
 // Add some namespaces, for easier testability and
 // to expose internal functions to the web UI

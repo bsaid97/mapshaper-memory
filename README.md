@@ -1,8 +1,10 @@
-# Mapshaper
+# mapshaper-memory
 
 ## Introduction
 
-Mapshaper is software for editing Shapefile, GeoJSON, [TopoJSON](https://github.com/mbostock/topojson/wiki), CSV and several other data formats, written in JavaScript.
+mapshaper-memory is a fork of [Mapshaper](https://github.com/mbloch/mapshaper) that adds a Memory API for processing GeoJSON data directly in memory without file I/O.
+
+This fork extends Mapshaper (software for editing Shapefile, GeoJSON, [TopoJSON](https://github.com/mbostock/topojson/wiki), CSV and several other data formats) with simple functions that work directly with JavaScript objects.
 
 Mapshaper supports essential map making tasks like simplifying shapes, editing attribute data, clipping, erasing, dissolving, filtering and more.
 

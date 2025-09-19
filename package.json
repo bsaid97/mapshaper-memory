@@ -1,7 +1,7 @@
 {
-  "name": "mapshaper",
-  "version": "0.6.111",
-  "description": "A tool for editing vector datasets for mapping and GIS.",
+  "name": "mapshaper-memory",
+  "version": "0.1.0",
+  "description": "A fork of mapshaper with memory API for processing GeoJSON directly in memory without file I/O",
   "keywords": [
     "shapefile",
     "topojson",
@@ -10,14 +10,17 @@
     "simplification",
     "topology",
     "csv",
-    "gis"
+    "gis",
+    "dissolve",
+    "memory",
+    "in-memory"
   ],
-  "author": "Matthew Bloch <masiyou@gmail.com>",
+  "author": "Based on mapshaper by Matthew Bloch",
   "contributors": [],
   "license": "MPL-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mbloch/mapshaper.git"
+    "url": "git+https://github.com/yourusername/mapshaper-memory.git"
   },
   "engines": {
     "node": ">=12.0.0"
