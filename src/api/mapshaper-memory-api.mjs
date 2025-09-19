@@ -15,8 +15,34 @@ export function dissolve(geojson, options = {}) {
   if (!validateGeojson(geojson)) {
     stop('Invalid GeoJSON input');
   }
-  
+
   return runCommandOnGeojson(geojson, cmd.dissolve, options);
+}
+
+// Dissolve features with true geometric merging (removes overlaps and gaps)
+// @geojson: GeoJSON FeatureCollection, Feature, or Geometry
+// @options: dissolve options (fields, sum-fields, copy-fields, etc.)
+// Note: Unlike dissolve(), dissolve2() performs topological analysis to merge adjacent polygons
+export function dissolve2(geojson, options = {}) {
+  if (!validateGeojson(geojson)) {
+    stop('Invalid GeoJSON input');
+  }
+
+  // Convert input to dataset
+  const dataset = geojsonToDataset(geojson, options);
+
+  // dissolve2 expects (layers, dataset, opts) signature
+  const resultLayers = cmd.dissolve2(dataset.layers, dataset, options);
+
+  // Create result dataset
+  const resultDataset = {
+    layers: resultLayers,
+    arcs: dataset.arcs,
+    info: dataset.info || {}
+  };
+
+  // Convert back to GeoJSON
+  return datasetToGeojson(resultDataset, options);
 }
 
 // Buffer features in a GeoJSON object
@@ -237,6 +263,7 @@ export function join(targetGeojson, sourceGeojson, options = {}) {
 // Export all memory API functions
 export default {
   dissolve,
+  dissolve2,
   buffer,
   clip,
   simplify,

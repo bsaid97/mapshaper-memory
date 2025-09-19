@@ -18,6 +18,7 @@ const mapshaper = require('./mapshaper.js');
 module.exports = {
   // Memory API functions for direct GeoJSON manipulation
   dissolve: mapshaper.dissolve,
+  dissolve2: mapshaper.dissolve2,
   filter: mapshaper.filter,
   calc: mapshaper.calc,
   simplify: mapshaper.simplify,
