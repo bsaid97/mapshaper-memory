@@ -6,7 +6,7 @@ const mapshaper = require('./mapshaper.js');
 
 // Export the Memory API functions directly
 module.exports = {
-  // Memory API functions for direct GeoJSON manipulation
+  // Core Memory API functions for direct GeoJSON manipulation
   dissolve: mapshaper.dissolve,
   dissolve2: mapshaper.dissolve2,
   filter: mapshaper.filter,
@@ -20,6 +20,36 @@ module.exports = {
   join: mapshaper.join,
   snap: mapshaper.snap,
   filterSlivers: mapshaper.filterSlivers,
+
+  // Geometry operations
+  explode: mapshaper.explode,
+  points: mapshaper.points,
+  lines: mapshaper.lines,
+  polygons: mapshaper.polygons,
+  mosaic: mapshaper.mosaic,
+
+  // Data operations
+  sort: mapshaper.sort,
+  each: mapshaper.each,
+  split: mapshaper.split,
+  mergeLayers: mapshaper.mergeLayers,
+  renameFields: mapshaper.renameFields,
+  filterFields: mapshaper.filterFields,
+
+  // Advanced geometry operations
+  divide: mapshaper.divide,
+  innerlines: mapshaper.innerlines,
+  rectangle: mapshaper.rectangle,
+  affine: mapshaper.affine,
+  proj: mapshaper.proj,
+  inlay: mapshaper.inlay,
+
+  // Visualization & analysis
+  dots: mapshaper.dots,
+  graticule: mapshaper.graticule,
+  pointGrid: mapshaper.pointGrid,
+  info: mapshaper.info,
+  checkGeometry: mapshaper.checkGeometry,
   
   // Also export the original API for compatibility
   runCommands: mapshaper.runCommands,

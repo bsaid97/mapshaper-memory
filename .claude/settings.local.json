@@ -4,7 +4,17 @@
       "Bash(npm run build:*)",
       "Bash(npm install)",
       "Bash(node:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(git remote set-url:*)",
+      "Bash(npm pack:*)",
+      "Bash(git rm:*)",
+      "Bash(npm info:*)",
+      "Bash(npm publish:*)",
+      "Bash(npm run lint)",
+      "Bash(npm test)"
     ],
     "deny": [],
     "ask": []

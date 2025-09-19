@@ -260,6 +260,415 @@ export function join(targetGeojson, sourceGeojson, options = {}) {
   return datasetToGeojson(targetDataset, options);
 }
 
+// Explode multi-part features into single-part features
+// @geojson: GeoJSON input
+// @options: explode options (naive mode, etc.)
+export function explode(geojson, options = {}) {
+  if (!validateGeojson(geojson)) {
+    stop('Invalid GeoJSON input');
+  }
+
+  return runCommandOnGeojson(geojson, cmd.explodeFeatures, options);
+}
+
+// Create point layer from other geometries
+// @geojson: GeoJSON input
+// @options: points options (vertices, centroids, endpoints, etc.)
+export function points(geojson, options = {}) {
+  if (!validateGeojson(geojson)) {
+    stop('Invalid GeoJSON input');
+  }
+
+  return runCommandOnGeojson(geojson, cmd.createPointLayer, options);
+}
+
+// Convert points/polygons to polylines
+// @geojson: GeoJSON input
+// @options: lines options
+export function lines(geojson, options = {}) {
+  if (!validateGeojson(geojson)) {
+    stop('Invalid GeoJSON input');
+  }
+
+  return runCommandOnGeojson(geojson, cmd.convertToPolylines, options);
+}
+
+// Convert polylines to polygons
+// @geojson: GeoJSON input
+// @options: polygons options
+export function polygons(geojson, options = {}) {
+  if (!validateGeojson(geojson)) {
+    stop('Invalid GeoJSON input');
+  }
+
+  return runCommandOnGeojson(geojson, cmd.convertToPolygons, options);
+}
+
+// Create mosaic by removing overlaps
+// @geojson: GeoJSON input
+// @options: mosaic options
+export function mosaic(geojson, options = {}) {
+  if (!validateGeojson(geojson)) {
+    stop('Invalid GeoJSON input');
+  }
+
+  return runCommandOnGeojson(geojson, cmd.mosaic, options);
+}
+
+// Sort features using expression
+// @geojson: GeoJSON input
+// @options: sort options with expression
+export function sort(geojson, options = {}) {
+  if (!validateGeojson(geojson)) {
+    stop('Invalid GeoJSON input');
+  }
+
+  return runCommandOnGeojson(geojson, cmd.sortFeatures, options);
+}
+
+// Apply JavaScript expressions to each feature
+// @geojson: GeoJSON input
+// @expression: JavaScript expression to evaluate
+// @options: each options
+export function each(geojson, expression, options = {}) {
+  if (!validateGeojson(geojson)) {
+    stop('Invalid GeoJSON input');
+  }
+
+  if (!expression) {
+    stop('Expression is required for each function');
+  }
+
+  const opts = utils.extend({}, options, { expression });
+
+  // Convert input to dataset
+  const dataset = geojsonToDataset(geojson, opts);
+
+  // Use the evaluateEachFeature command
+  cmd.evaluateEachFeature(dataset.layers[0], dataset, expression, opts);
+
+  // Convert back to GeoJSON
+  return datasetToGeojson(dataset, opts);
+}
+
+// Split features into multiple layers
+// @geojson: GeoJSON input
+// @options: split options
+export function split(geojson, options = {}) {
+  if (!validateGeojson(geojson)) {
+    stop('Invalid GeoJSON input');
+  }
+
+  // Convert input to dataset
+  const dataset = geojsonToDataset(geojson, options);
+
+  // Split the layer
+  const splitLayers = cmd.splitLayer(dataset.layers[0], options);
+
+  // Create result dataset with split layers
+  const resultDataset = {
+    layers: splitLayers,
+    arcs: dataset.arcs,
+    info: dataset.info || {}
+  };
+
+  // Convert back to GeoJSON - return array of GeoJSON objects
+  if (splitLayers.length === 1) {
+    return datasetToGeojson(resultDataset, options);
+  } else {
+    // Return array of GeoJSON objects for multiple layers
+    return splitLayers.map(layer => {
+      const singleLayerDataset = {
+        layers: [layer],
+        arcs: dataset.arcs,
+        info: dataset.info || {}
+      };
+      return datasetToGeojson(singleLayerDataset, options);
+    });
+  }
+}
+
+// Merge multiple layers into one
+// @geojsonArray: Array of GeoJSON objects or single GeoJSON with multiple layers
+// @options: merge-layers options
+export function mergeLayers(geojsonArray, options = {}) {
+  if (Array.isArray(geojsonArray)) {
+    // Handle array of GeoJSON objects
+    return merge(geojsonArray, utils.extend({}, options, { 'merge-layers': true }));
+  } else {
+    // Handle single GeoJSON, merge its internal layers
+    if (!validateGeojson(geojsonArray)) {
+      stop('Invalid GeoJSON input');
+    }
+
+    const dataset = geojsonToDataset(geojsonArray, options);
+    const mergedLayer = cmd.mergeLayers(dataset.layers, options);
+
+    const resultDataset = {
+      layers: [mergedLayer],
+      arcs: dataset.arcs,
+      info: dataset.info || {}
+    };
+
+    return datasetToGeojson(resultDataset, options);
+  }
+}
+
+// Divide polylines by polygon boundaries
+// @targetGeojson: Polyline GeoJSON to divide
+// @dividerGeojson: Polygon GeoJSON to use as divider
+// @options: divide options
+export function divide(targetGeojson, dividerGeojson, options = {}) {
+  if (!validateGeojson(targetGeojson)) {
+    stop('Invalid target GeoJSON input');
+  }
+
+  if (!validateGeojson(dividerGeojson)) {
+    stop('Invalid divider GeoJSON input');
+  }
+
+  // Convert both inputs to datasets
+  const targetDataset = geojsonToDataset(targetGeojson);
+  const dividerDataset = geojsonToDataset(dividerGeojson);
+
+  // Perform the divide operation
+  const dividedLayer = cmd.divideLayer(
+    targetDataset.layers[0],
+    dividerDataset.layers[0],
+    targetDataset,
+    options
+  );
+
+  // Create result dataset
+  const resultDataset = {
+    layers: [dividedLayer],
+    arcs: targetDataset.arcs,
+    info: targetDataset.info || {}
+  };
+
+  return datasetToGeojson(resultDataset, options);
+}
+
+// Extract shared boundaries between polygons
+// @geojson: GeoJSON polygon input
+// @options: innerlines options
+export function innerlines(geojson, options = {}) {
+  if (!validateGeojson(geojson)) {
+    stop('Invalid GeoJSON input');
+  }
+
+  return runCommandOnGeojson(geojson, cmd.innerlines, options);
+}
+
+// Create rectangular polygons
+// @options: rectangle options (bbox, coordinates, etc.)
+export function rectangle(options = {}) {
+  // This function creates geometry from scratch, doesn't need input GeoJSON
+
+  // Convert to dataset format expected by the command
+  const dataset = {
+    layers: [],
+    arcs: null,
+    info: {}
+  };
+
+  // Create rectangle layer
+  const rectangleLayer = cmd.rectangle(dataset, options);
+
+  const resultDataset = {
+    layers: [rectangleLayer],
+    arcs: dataset.arcs,
+    info: dataset.info
+  };
+
+  return datasetToGeojson(resultDataset, options);
+}
+
+// Transform coordinates (shift, scale, rotate)
+// @geojson: GeoJSON input
+// @options: affine transformation options
+export function affine(geojson, options = {}) {
+  if (!validateGeojson(geojson)) {
+    stop('Invalid GeoJSON input');
+  }
+
+  return runCommandOnGeojson(geojson, cmd.affineTransform, options);
+}
+
+// Project dataset to different coordinate system
+// @geojson: GeoJSON input
+// @options: projection options
+export function proj(geojson, options = {}) {
+  if (!validateGeojson(geojson)) {
+    stop('Invalid GeoJSON input');
+  }
+
+  return runCommandOnGeojson(geojson, cmd.proj, options);
+}
+
+// Create inlay polygons
+// @geojson: GeoJSON input
+// @options: inlay options
+export function inlay(geojson, options = {}) {
+  if (!validateGeojson(geojson)) {
+    stop('Invalid GeoJSON input');
+  }
+
+  return runCommandOnGeojson(geojson, cmd.inlay, options);
+}
+
+// Remove small detached polygon rings
+// @geojson: GeoJSON input
+// @options: filter-islands options (min-area, etc.)
+export function filterIslands(geojson, options = {}) {
+  if (!validateGeojson(geojson)) {
+    stop('Invalid GeoJSON input');
+  }
+
+  return runCommandOnGeojson(geojson, cmd.filterIslands, options);
+}
+
+// Rename data fields
+// @geojson: GeoJSON input
+// @options: rename-fields options
+export function renameFields(geojson, options = {}) {
+  if (!validateGeojson(geojson)) {
+    stop('Invalid GeoJSON input');
+  }
+
+  return runCommandOnGeojson(geojson, cmd.renameFields, options);
+}
+
+// Delete specific data fields
+// @geojson: GeoJSON input
+// @options: filter-fields options
+export function filterFields(geojson, options = {}) {
+  if (!validateGeojson(geojson)) {
+    stop('Invalid GeoJSON input');
+  }
+
+  return runCommandOnGeojson(geojson, cmd.filterFields, options);
+}
+
+// Delete layers or elements within layers
+// @geojson: GeoJSON input
+// @options: drop options
+export function drop(geojson, options = {}) {
+  if (!validateGeojson(geojson)) {
+    stop('Invalid GeoJSON input');
+  }
+
+  return runCommandOnGeojson(geojson, cmd.drop, options);
+}
+
+// Remove duplicate features
+// @geojson: GeoJSON input
+// @options: uniq options
+export function uniq(geojson, options = {}) {
+  if (!validateGeojson(geojson)) {
+    stop('Invalid GeoJSON input');
+  }
+
+  return runCommandOnGeojson(geojson, cmd.uniq, options);
+}
+
+// Join with fuzzy matching
+// @targetGeojson: GeoJSON to receive attributes
+// @sourceGeojson: GeoJSON with attributes to join
+// @options: fuzzy-join options
+export function fuzzyJoin(targetGeojson, sourceGeojson, options = {}) {
+  if (!validateGeojson(targetGeojson)) {
+    stop('Invalid target GeoJSON input');
+  }
+
+  if (!validateGeojson(sourceGeojson)) {
+    stop('Invalid source GeoJSON input');
+  }
+
+  // Convert inputs to datasets
+  const targetDataset = geojsonToDataset(targetGeojson);
+  const sourceDataset = geojsonToDataset(sourceGeojson);
+
+  // Perform fuzzy join operation
+  cmd.fuzzyJoin(targetDataset.layers[0], sourceDataset.layers[0], options);
+
+  return datasetToGeojson(targetDataset, options);
+}
+
+// Fill polygons with random points
+// @geojson: GeoJSON input
+// @options: dots options (count, spacing, etc.)
+export function dots(geojson, options = {}) {
+  if (!validateGeojson(geojson)) {
+    stop('Invalid GeoJSON input');
+  }
+
+  return runCommandOnGeojson(geojson, cmd.dots, options);
+}
+
+// Create grid lines for world maps
+// @options: graticule options
+export function graticule(options = {}) {
+  // This function creates geometry from scratch
+  const dataset = {
+    layers: [],
+    arcs: null,
+    info: {}
+  };
+
+  const graticuleLayer = cmd.graticule(dataset, options);
+
+  const resultDataset = {
+    layers: [graticuleLayer],
+    arcs: dataset.arcs,
+    info: dataset.info
+  };
+
+  return datasetToGeojson(resultDataset, options);
+}
+
+// Create rectangular grid of points
+// @options: point-grid options
+export function pointGrid(options = {}) {
+  const dataset = {
+    layers: [],
+    arcs: null,
+    info: {}
+  };
+
+  const gridLayer = cmd.pointGrid(dataset, options);
+
+  const resultDataset = {
+    layers: [gridLayer],
+    arcs: dataset.arcs,
+    info: dataset.info
+  };
+
+  return datasetToGeojson(resultDataset, options);
+}
+
+// Get dataset information
+// @geojson: GeoJSON input
+export function info(geojson) {
+  if (!validateGeojson(geojson)) {
+    stop('Invalid GeoJSON input');
+  }
+
+  const dataset = geojsonToDataset(geojson);
+  return cmd.printInfo(dataset);
+}
+
+// Validate geometry
+// @geojson: GeoJSON input
+// @options: check-geometry options
+export function checkGeometry(geojson, options = {}) {
+  if (!validateGeojson(geojson)) {
+    stop('Invalid GeoJSON input');
+  }
+
+  return runCommandOnGeojson(geojson, cmd.checkGeometry, options);
+}
+
 // Export all memory API functions
 export default {
   dissolve,
@@ -272,5 +681,31 @@ export default {
   calc,
   clean,
   union,
-  join
+  join,
+  explode,
+  points,
+  lines,
+  polygons,
+  mosaic,
+  sort,
+  each,
+  split,
+  mergeLayers,
+  divide,
+  innerlines,
+  rectangle,
+  affine,
+  proj,
+  inlay,
+  filterIslands,
+  renameFields,
+  filterFields,
+  drop,
+  uniq,
+  fuzzyJoin,
+  dots,
+  graticule,
+  pointGrid,
+  info,
+  checkGeometry
 };
