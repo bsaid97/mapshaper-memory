@@ -8,6 +8,70 @@ import cmd from '../mapshaper-cmd';
 import { stop } from '../utils/mapshaper-logging';
 import utils from '../utils/mapshaper-utils';
 
+// Universal option normalization utility
+function normalizeOptions(options = {}) {
+  const normalized = { ...options };
+
+  // Common option mappings (dash to underscore)
+  const optionMappings = {
+    // Dissolve options
+    'sliver-control': 'sliver_control',
+    'gap-fill-area': 'gap_fill_area',
+    'sum-fields': 'sum_fields',
+    'copy-fields': 'copy_fields',
+    'allow-overlaps': 'allow_overlaps',
+
+    // Filter options
+    'min-area': 'min_area',
+    'remove-empty': 'remove_empty',
+    'keep-shapes': 'keep_shapes',
+
+    // Simplify options
+    'cartesian': 'cartesian',
+    'planar': 'planar',
+    'spherical': 'spherical',
+
+    // Buffer options
+    'merge-holes': 'merge_holes',
+
+    // Join options
+    'force': 'force',
+    'where': 'where',
+
+    // General options
+    'no-replace': 'no_replace',
+    'target': 'target',
+    'source': 'source',
+    'aspect-ratio': 'aspect_ratio'
+  };
+
+  // Apply option name conversions
+  Object.keys(optionMappings).forEach(dashKey => {
+    if (normalized[dashKey] !== undefined) {
+      normalized[optionMappings[dashKey]] = normalized[dashKey];
+      delete normalized[dashKey];
+    }
+  });
+
+  // Convert string fields to array format
+  if (normalized.fields && typeof normalized.fields === 'string') {
+    normalized.fields = [normalized.fields];
+  }
+
+  // Convert comma-separated fields to arrays
+  ['sum_fields', 'copy_fields', 'fields'].forEach(fieldKey => {
+    if (normalized[fieldKey] && typeof normalized[fieldKey] === 'string') {
+      if (normalized[fieldKey].includes(',')) {
+        normalized[fieldKey] = normalized[fieldKey].split(',').map(s => s.trim());
+      } else if (fieldKey !== 'fields') { // fields already handled above
+        normalized[fieldKey] = [normalized[fieldKey]];
+      }
+    }
+  });
+
+  return normalized;
+}
+
 // Dissolve features in a GeoJSON object
 // @geojson: GeoJSON FeatureCollection, Feature, or Geometry
 // @options: dissolve options (fields, sum-fields, copy-fields, etc.)
@@ -16,22 +80,7 @@ export function dissolve(geojson, options = {}) {
     stop('Invalid GeoJSON input');
   }
 
-  // Convert dash-separated options to underscore format for internal consistency
-  const normalizedOptions = { ...options };
-  if (normalizedOptions['sum-fields'] !== undefined) {
-    normalizedOptions.sum_fields = normalizedOptions['sum-fields'];
-    delete normalizedOptions['sum-fields'];
-  }
-  if (normalizedOptions['copy-fields'] !== undefined) {
-    normalizedOptions.copy_fields = normalizedOptions['copy-fields'];
-    delete normalizedOptions['copy-fields'];
-  }
-
-  // Convert fields string to array format expected by internal functions
-  if (normalizedOptions.fields && typeof normalizedOptions.fields === 'string') {
-    normalizedOptions.fields = [normalizedOptions.fields];
-  }
-
+  const normalizedOptions = normalizeOptions(options);
   return runCommandOnGeojson(geojson, cmd.dissolve, normalizedOptions);
 }
 
@@ -44,21 +93,7 @@ export function dissolve2(geojson, options = {}) {
     stop('Invalid GeoJSON input');
   }
 
-  // Convert dash-separated options to underscore format for internal consistency
-  const normalizedOptions = { ...options };
-  if (normalizedOptions['sliver-control'] !== undefined) {
-    normalizedOptions.sliver_control = normalizedOptions['sliver-control'];
-    delete normalizedOptions['sliver-control'];
-  }
-  if (normalizedOptions['gap-fill-area'] !== undefined) {
-    normalizedOptions.gap_fill_area = normalizedOptions['gap-fill-area'];
-    delete normalizedOptions['gap-fill-area'];
-  }
-
-  // Convert fields string to array format expected by internal functions
-  if (normalizedOptions.fields && typeof normalizedOptions.fields === 'string') {
-    normalizedOptions.fields = [normalizedOptions.fields];
-  }
+  const normalizedOptions = normalizeOptions(options);
 
   // Convert input to dataset
   const dataset = geojsonToDataset(geojson, normalizedOptions);
@@ -137,12 +172,14 @@ export function simplify(geojson, options = {}) {
   if (!validateGeojson(geojson)) {
     stop('Invalid GeoJSON input');
   }
-  
+
+  options = normalizeOptions(options);
+
   // Set default percentage if not provided
   if (!options.percentage && !options.interval && !options.resolution) {
     options = utils.extend({}, options, { percentage: 0.1 }); // Default to 10% simplification
   }
-  
+
   return runCommandOnGeojson(geojson, cmd.simplify, options);
 }
 
@@ -153,36 +190,38 @@ export function merge(geojsonArray, options = {}) {
   if (!Array.isArray(geojsonArray) || geojsonArray.length === 0) {
     stop('Input must be a non-empty array of GeoJSON objects');
   }
-  
+
+  options = normalizeOptions(options);
+
   // Validate all inputs
   geojsonArray.forEach((geojson, i) => {
     if (!validateGeojson(geojson)) {
       stop(`Invalid GeoJSON at index ${i}`);
     }
   });
-  
+
   // Convert all inputs to datasets
   const datasets = geojsonArray.map(geojson => geojsonToDataset(geojson));
-  
+
   // Merge all layers
   const mergedLayers = [];
   datasets.forEach(dataset => {
     mergedLayers.push(...dataset.layers);
   });
-  
+
   // Use the first dataset's arcs (for now, assuming compatible projections)
   const resultDataset = {
     layers: mergedLayers,
     arcs: datasets[0].arcs,
     info: datasets[0].info || {}
   };
-  
+
   // If merge-layers option is true, combine into single layer
   if (options.merge_layers !== false) {
     const mergedLayer = cmd.mergeLayers(mergedLayers, options);
     resultDataset.layers = [mergedLayer];
   }
-  
+
   return datasetToGeojson(resultDataset, options);
 }
 
@@ -194,6 +233,8 @@ export function filter(geojson, options = {}) {
   if (!validateGeojson(geojson)) {
     stop('Invalid GeoJSON input');
   }
+
+  options = normalizeOptions(options);
   
   // Expression can be passed as a string (second parameter) or in options
   let opts;
@@ -226,23 +267,25 @@ export function calc(geojson, expressions, options = {}) {
   if (!validateGeojson(geojson)) {
     stop('Invalid GeoJSON input');
   }
-  
+
   if (!expressions || typeof expressions !== 'object') {
     stop('Expressions object is required');
   }
-  
+
+  options = normalizeOptions(options);
+
   // Convert expressions object to expression string for the each command
   const expressionLines = Object.entries(expressions).map(([field, expr]) => {
     return `${field} = ${expr}`;
   });
   const expression = expressionLines.join('; ');
-  
+
   // Convert input to dataset
   const dataset = geojsonToDataset(geojson, options);
-  
+
   // Use the evaluateEachFeature command to add calculated fields
   cmd.evaluateEachFeature(dataset.layers[0], dataset, expression, options);
-  
+
   // Convert back to GeoJSON
   return datasetToGeojson(dataset, options);
 }
@@ -254,7 +297,9 @@ export function clean(geojson, options = {}) {
   if (!validateGeojson(geojson)) {
     stop('Invalid GeoJSON input');
   }
-  
+
+  options = normalizeOptions(options);
+
   return runCommandOnGeojson(geojson, cmd.clean, options);
 }
 
@@ -265,7 +310,9 @@ export function union(geojson, options = {}) {
   if (!validateGeojson(geojson)) {
     stop('Invalid GeoJSON input');
   }
-  
+
+  options = normalizeOptions(options);
+
   return runCommandOnGeojson(geojson, cmd.union, options);
 }
 
@@ -277,18 +324,20 @@ export function join(targetGeojson, sourceGeojson, options = {}) {
   if (!validateGeojson(targetGeojson)) {
     stop('Invalid target GeoJSON input');
   }
-  
+
   if (!validateGeojson(sourceGeojson)) {
     stop('Invalid source GeoJSON input');
   }
-  
+
+  options = normalizeOptions(options);
+
   // Convert inputs to datasets
   const targetDataset = geojsonToDataset(targetGeojson);
   const sourceDataset = geojsonToDataset(sourceGeojson);
-  
+
   // Perform join operation
   cmd.join(targetDataset.layers[0], sourceDataset.layers[0], options);
-  
+
   return datasetToGeojson(targetDataset, options);
 }
 
@@ -299,6 +348,8 @@ export function explode(geojson, options = {}) {
   if (!validateGeojson(geojson)) {
     stop('Invalid GeoJSON input');
   }
+
+  options = normalizeOptions(options);
 
   return runCommandOnGeojson(geojson, cmd.explodeFeatures, options);
 }
@@ -311,6 +362,8 @@ export function points(geojson, options = {}) {
     stop('Invalid GeoJSON input');
   }
 
+  options = normalizeOptions(options);
+
   return runCommandOnGeojson(geojson, cmd.createPointLayer, options);
 }
 
@@ -321,6 +374,8 @@ export function lines(geojson, options = {}) {
   if (!validateGeojson(geojson)) {
     stop('Invalid GeoJSON input');
   }
+
+  options = normalizeOptions(options);
 
   return runCommandOnGeojson(geojson, cmd.convertToPolylines, options);
 }
@@ -333,6 +388,8 @@ export function polygons(geojson, options = {}) {
     stop('Invalid GeoJSON input');
   }
 
+  options = normalizeOptions(options);
+
   return runCommandOnGeojson(geojson, cmd.convertToPolygons, options);
 }
 
@@ -344,6 +401,8 @@ export function mosaic(geojson, options = {}) {
     stop('Invalid GeoJSON input');
   }
 
+  options = normalizeOptions(options);
+
   return runCommandOnGeojson(geojson, cmd.mosaic, options);
 }
 
@@ -354,6 +413,8 @@ export function sort(geojson, options = {}) {
   if (!validateGeojson(geojson)) {
     stop('Invalid GeoJSON input');
   }
+
+  options = normalizeOptions(options);
 
   return runCommandOnGeojson(geojson, cmd.sortFeatures, options);
 }
@@ -370,6 +431,8 @@ export function each(geojson, expression, options = {}) {
   if (!expression) {
     stop('Expression is required for each function');
   }
+
+  options = normalizeOptions(options);
 
   const opts = utils.extend({}, options, { expression });
 
@@ -390,6 +453,8 @@ export function split(geojson, options = {}) {
   if (!validateGeojson(geojson)) {
     stop('Invalid GeoJSON input');
   }
+
+  options = normalizeOptions(options);
 
   // Convert input to dataset
   const dataset = geojsonToDataset(geojson, options);
@@ -424,6 +489,8 @@ export function split(geojson, options = {}) {
 // @geojsonArray: Array of GeoJSON objects or single GeoJSON with multiple layers
 // @options: merge-layers options
 export function mergeLayers(geojsonArray, options = {}) {
+  options = normalizeOptions(options);
+
   if (Array.isArray(geojsonArray)) {
     // Handle array of GeoJSON objects
     return merge(geojsonArray, utils.extend({}, options, { 'merge-layers': true }));
@@ -459,6 +526,8 @@ export function divide(targetGeojson, dividerGeojson, options = {}) {
     stop('Invalid divider GeoJSON input');
   }
 
+  options = normalizeOptions(options);
+
   // Convert both inputs to datasets
   const targetDataset = geojsonToDataset(targetGeojson);
   const dividerDataset = geojsonToDataset(dividerGeojson);
@@ -489,6 +558,8 @@ export function innerlines(geojson, options = {}) {
     stop('Invalid GeoJSON input');
   }
 
+  options = normalizeOptions(options);
+
   return runCommandOnGeojson(geojson, cmd.innerlines, options);
 }
 
@@ -496,6 +567,8 @@ export function innerlines(geojson, options = {}) {
 // @options: rectangle options (bbox, coordinates, etc.)
 export function rectangle(options = {}) {
   // This function creates geometry from scratch, doesn't need input GeoJSON
+
+  options = normalizeOptions(options);
 
   // Convert to dataset format expected by the command
   const dataset = {
@@ -524,6 +597,8 @@ export function affine(geojson, options = {}) {
     stop('Invalid GeoJSON input');
   }
 
+  options = normalizeOptions(options);
+
   return runCommandOnGeojson(geojson, cmd.affineTransform, options);
 }
 
@@ -534,6 +609,8 @@ export function proj(geojson, options = {}) {
   if (!validateGeojson(geojson)) {
     stop('Invalid GeoJSON input');
   }
+
+  options = normalizeOptions(options);
 
   return runCommandOnGeojson(geojson, cmd.proj, options);
 }
@@ -546,6 +623,8 @@ export function inlay(geojson, options = {}) {
     stop('Invalid GeoJSON input');
   }
 
+  options = normalizeOptions(options);
+
   return runCommandOnGeojson(geojson, cmd.inlay, options);
 }
 
@@ -556,6 +635,8 @@ export function filterIslands(geojson, options = {}) {
   if (!validateGeojson(geojson)) {
     stop('Invalid GeoJSON input');
   }
+
+  options = normalizeOptions(options);
 
   return runCommandOnGeojson(geojson, cmd.filterIslands, options);
 }
@@ -568,6 +649,8 @@ export function renameFields(geojson, options = {}) {
     stop('Invalid GeoJSON input');
   }
 
+  options = normalizeOptions(options);
+
   return runCommandOnGeojson(geojson, cmd.renameFields, options);
 }
 
@@ -578,6 +661,8 @@ export function filterFields(geojson, options = {}) {
   if (!validateGeojson(geojson)) {
     stop('Invalid GeoJSON input');
   }
+
+  options = normalizeOptions(options);
 
   return runCommandOnGeojson(geojson, cmd.filterFields, options);
 }
@@ -590,6 +675,8 @@ export function drop(geojson, options = {}) {
     stop('Invalid GeoJSON input');
   }
 
+  options = normalizeOptions(options);
+
   return runCommandOnGeojson(geojson, cmd.drop, options);
 }
 
@@ -600,6 +687,8 @@ export function uniq(geojson, options = {}) {
   if (!validateGeojson(geojson)) {
     stop('Invalid GeoJSON input');
   }
+
+  options = normalizeOptions(options);
 
   return runCommandOnGeojson(geojson, cmd.uniq, options);
 }
@@ -616,6 +705,8 @@ export function fuzzyJoin(targetGeojson, sourceGeojson, options = {}) {
   if (!validateGeojson(sourceGeojson)) {
     stop('Invalid source GeoJSON input');
   }
+
+  options = normalizeOptions(options);
 
   // Convert inputs to datasets
   const targetDataset = geojsonToDataset(targetGeojson);
@@ -635,6 +726,8 @@ export function dots(geojson, options = {}) {
     stop('Invalid GeoJSON input');
   }
 
+  options = normalizeOptions(options);
+
   return runCommandOnGeojson(geojson, cmd.dots, options);
 }
 
@@ -642,6 +735,9 @@ export function dots(geojson, options = {}) {
 // @options: graticule options
 export function graticule(options = {}) {
   // This function creates geometry from scratch
+
+  options = normalizeOptions(options);
+
   const dataset = {
     layers: [],
     arcs: null,
@@ -662,6 +758,8 @@ export function graticule(options = {}) {
 // Create rectangular grid of points
 // @options: point-grid options
 export function pointGrid(options = {}) {
+  options = normalizeOptions(options);
+
   const dataset = {
     layers: [],
     arcs: null,
@@ -698,6 +796,8 @@ export function checkGeometry(geojson, options = {}) {
     stop('Invalid GeoJSON input');
   }
 
+  options = normalizeOptions(options);
+
   return runCommandOnGeojson(geojson, cmd.checkGeometry, options);
 }
 
@@ -708,6 +808,8 @@ export function filterSlivers(geojson, options = {}) {
   if (!validateGeojson(geojson)) {
     stop('Invalid GeoJSON input');
   }
+
+  options = normalizeOptions(options);
 
   // Convert input to dataset
   const dataset = geojsonToDataset(geojson, options);
@@ -725,6 +827,8 @@ export function snap(geojson, options = {}) {
   if (!validateGeojson(geojson)) {
     stop('Invalid GeoJSON input');
   }
+
+  options = normalizeOptions(options);
 
   // Convert input to dataset
   const dataset = geojsonToDataset(geojson, options);
