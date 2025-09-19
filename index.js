@@ -28,6 +28,8 @@ module.exports = {
   clean: mapshaper.clean,
   union: mapshaper.union,
   join: mapshaper.join,
+  snap: mapshaper.snap,
+  filterSlivers: mapshaper.filterSlivers,
   
   // Also export the original API for compatibility
   runCommands: mapshaper.runCommands,
