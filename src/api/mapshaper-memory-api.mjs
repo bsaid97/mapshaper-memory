@@ -16,7 +16,23 @@ export function dissolve(geojson, options = {}) {
     stop('Invalid GeoJSON input');
   }
 
-  return runCommandOnGeojson(geojson, cmd.dissolve, options);
+  // Convert dash-separated options to underscore format for internal consistency
+  const normalizedOptions = { ...options };
+  if (normalizedOptions['sum-fields'] !== undefined) {
+    normalizedOptions.sum_fields = normalizedOptions['sum-fields'];
+    delete normalizedOptions['sum-fields'];
+  }
+  if (normalizedOptions['copy-fields'] !== undefined) {
+    normalizedOptions.copy_fields = normalizedOptions['copy-fields'];
+    delete normalizedOptions['copy-fields'];
+  }
+
+  // Convert fields string to array format expected by internal functions
+  if (normalizedOptions.fields && typeof normalizedOptions.fields === 'string') {
+    normalizedOptions.fields = [normalizedOptions.fields];
+  }
+
+  return runCommandOnGeojson(geojson, cmd.dissolve, normalizedOptions);
 }
 
 // Dissolve features with true geometric merging (removes overlaps and gaps)
@@ -28,11 +44,27 @@ export function dissolve2(geojson, options = {}) {
     stop('Invalid GeoJSON input');
   }
 
+  // Convert dash-separated options to underscore format for internal consistency
+  const normalizedOptions = { ...options };
+  if (normalizedOptions['sliver-control'] !== undefined) {
+    normalizedOptions.sliver_control = normalizedOptions['sliver-control'];
+    delete normalizedOptions['sliver-control'];
+  }
+  if (normalizedOptions['gap-fill-area'] !== undefined) {
+    normalizedOptions.gap_fill_area = normalizedOptions['gap-fill-area'];
+    delete normalizedOptions['gap-fill-area'];
+  }
+
+  // Convert fields string to array format expected by internal functions
+  if (normalizedOptions.fields && typeof normalizedOptions.fields === 'string') {
+    normalizedOptions.fields = [normalizedOptions.fields];
+  }
+
   // Convert input to dataset
-  const dataset = geojsonToDataset(geojson, options);
+  const dataset = geojsonToDataset(geojson, normalizedOptions);
 
   // dissolve2 expects (layers, dataset, opts) signature
-  const resultLayers = cmd.dissolve2(dataset.layers, dataset, options);
+  const resultLayers = cmd.dissolve2(dataset.layers, dataset, normalizedOptions);
 
   // Create result dataset
   const resultDataset = {
@@ -681,9 +713,8 @@ export function filterSlivers(geojson, options = {}) {
   const dataset = geojsonToDataset(geojson, options);
 
   // filterSlivers expects (layer, dataset, opts) signature
-  const result = cmd.filterSlivers(dataset.layers[0], dataset, options);
-
-  // filterSlivers modifies the layer in place and returns count, so return the modified dataset
+  // filterSlivers modifies the layer in place and returns count
+  cmd.filterSlivers(dataset.layers[0], dataset, options);
   return datasetToGeojson(dataset, options);
 }
 

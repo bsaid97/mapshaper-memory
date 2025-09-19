@@ -14,7 +14,8 @@
       "Bash(npm info:*)",
       "Bash(npm publish:*)",
       "Bash(npm run lint)",
-      "Bash(npm test)"
+      "Bash(npm test)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []
