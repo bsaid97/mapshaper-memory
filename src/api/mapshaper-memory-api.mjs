@@ -669,6 +669,28 @@ export function checkGeometry(geojson, options = {}) {
   return runCommandOnGeojson(geojson, cmd.checkGeometry, options);
 }
 
+// Filter out small polygons (slivers)
+// @geojson: GeoJSON input
+// @options: filter-slivers options
+export function filterSlivers(geojson, options = {}) {
+  if (!validateGeojson(geojson)) {
+    stop('Invalid GeoJSON input');
+  }
+
+  return runCommandOnGeojson(geojson, cmd.filterSlivers, options);
+}
+
+// Snap coordinates to a grid for precision control
+// @geojson: GeoJSON input
+// @options: snap options
+export function snap(geojson, options = {}) {
+  if (!validateGeojson(geojson)) {
+    stop('Invalid GeoJSON input');
+  }
+
+  return runCommandOnGeojson(geojson, cmd.snap, options);
+}
+
 // Export all memory API functions
 export default {
   dissolve,
@@ -682,6 +704,8 @@ export default {
   clean,
   union,
   join,
+  snap,
+  filterSlivers,
   explode,
   points,
   lines,
