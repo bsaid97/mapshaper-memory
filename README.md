@@ -2,6 +2,8 @@
 
 A memory-focused JavaScript library for processing GeoJSON data with advanced geospatial operations. Based on [mapshaper](https://github.com/mbloch/mapshaper) by Matthew Bloch, this library provides a clean, functional API for working with geographic data directly in memory.
 
+> ⚠️ **Experimental Library**: This library is currently in experimental status and under active development. APIs may change, and some features may not be fully stable. We welcome feedback and contributions as we work towards a stable release.
+
 ## Features
 
 🗺️ **13 Geospatial Operations** - dissolve, buffer, clip, simplify, and more
